@@ -35,6 +35,7 @@ CREATE TABLE talons
     doctor_num INT,
     oms_num BIGINT,
     visit_time DATETIME NOT NULL,
+    visit_amount BIGINT,
     FOREIGN KEY (doctor_num) REFERENCES doctors(doctor_num),
     FOREIGN KEY (oms_num) REFERENCES patients(oms_num)
 );
@@ -69,13 +70,13 @@ VALUES
 ('Иванов Сергей Эдуардович', 'м', '1965-08-15', 3224584531, 2345, 1),
 ('Скрябин Евгений Дмитриевич', 'м', '1985-11-25	', 45320544731, 2678, 3);
 
-insert talons (doctor_num, oms_num, visit_time)
+insert talons (doctor_num, oms_num, visit_time, visit_amount)
 VALUES
-    (1, 47327844534, '2017-07-23 13:10:11'),
-    (2, 36327844534, '2018-07-23 13:10:11'),
-    (2, 78327844534, '2019-07-23 13:10:11'),
-    (1, 48324544531, '2019-07-23 13:10:11'),
-    (2, 78327844534, '2019-07-23 13:10:11');
+    (1, 47327844534, '2017-07-23 13:10:11', 1350.00),
+    (2, 36327844534, '2018-07-23 13:10:11', 1500.00),
+    (2, 78327844534, '2019-07-23 13:10:11', 1350.00),
+    (1, 48324544531, '2019-07-23 13:10:11', 1500.00),
+    (2, 78327844534, '2019-07-23 13:10:11', 1500.00);
 
 ##### СКРИПТЫ #####
 
@@ -130,3 +131,66 @@ JOIN
     talons t ON p.oms_num = t.oms_num
 JOIN
     doctors d ON t.doctor_num = d.doctor_num;
+
+# Выведите ФИО ВСЕХ докторов, которые есть в таблице doctors,
+# а также дату посещения из таблицы talons для каждого доктора.
+
+SELECT
+    d.doctor_name,
+    t.visit_time
+FROM
+    doctors d
+LEFT JOIN
+        talons t ON d.doctor_num = t.doctor_num;
+
+# Вывести ФИО ВСЕХ пациентов, а также даты приемов, когда пациенты посещали врачей.
+
+SELECT
+    p.full_name,
+    t.visit_time
+FROM
+    talons t
+RIGHT JOIN patients p on p.oms_num = t.oms_num;
+
+# Выведите информацию (full_name, sex, birth_date, oms_num) о всех пациентах,
+# одного пола с пациентом, родившимся в 1995 году.
+# Результат отсортируйте по дате рождения - по возрастанию.
+
+SELECT
+	p1.full_name,
+	p1.sex,
+	p1.birth_date,
+	p1.oms_num
+FROM patients p1
+JOIN patients p2
+ON (p1.sex = p2.sex)
+WHERE YEAR(p2.birth_date) = 1995
+ORDER BY p1.birth_date;
+
+# Вывести информацию обо всех пациентах,
+# возраст которых больше возраста пациента Чусова Виктора Петровича.
+
+SELECT *
+FROM patients
+WHERE birth_date < (SELECT birth_date
+                    FROM patients
+                    WHERE full_name = 'Чусов Виктор Петрович');
+
+# Вывести информацию о визитах,
+# стоимость которых не ниже средней стоимости визитов по всем талонам.
+
+SELECT *
+FROM talons
+WHERE visit_amount >= (SELECT AVG(visit_amount)
+                      FROM talons);
+
+# Вывести уникальные ФИО врачей, к которому были визиты с минимальной стоимостью.
+
+SELECT
+	DISTINCT doctor_name
+FROM talons t
+JOIN doctors d
+ON (t.doctor_num = d.doctor_num)
+WHERE t.visit_amount = (SELECT MIN(visit_amount) FROM talons);
+
+
