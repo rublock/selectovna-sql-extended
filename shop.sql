@@ -48,6 +48,41 @@ SELECT
 	id, descr, 'description'
 FROM description;
 
-SELECT id, name  FROM product
-EXCEPT
-SELECT id, descr FROM description;
+# INNER JOIN
+
+SELECT
+    prod.id AS product_id,
+    prod.name,
+    ds.descr
+FROM product prod
+JOIN description ds
+ON (prod.id = ds.id);
+
+SELECT
+    prod.id,
+    prod.name,
+    ds.id,
+    ds.descr
+FROM product prod
+LEFT JOIN description ds
+ON (prod.id = ds.id)
+UNION
+SELECT
+    prod.id,
+    prod.name,
+    ds.id,
+    ds.descr
+FROM product prod
+RIGHT JOIN description ds
+ON (prod.id = ds.id);
+
+# Измените скрипт разработчика, таким образом,
+# чтобы вместо пустого значения для поля descr выводилось значение "Не заполнена":
+
+SELECT
+    prod.id,
+    prod.name,
+    IF (ISNULL(ds.descr), 'Не заполнена', ds.descr)
+FROM product prod
+LEFT JOIN description ds
+ON (prod.id = ds.id);

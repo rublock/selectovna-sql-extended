@@ -193,4 +193,50 @@ JOIN doctors d
 ON (t.doctor_num = d.doctor_num)
 WHERE t.visit_amount = (SELECT MIN(visit_amount) FROM talons);
 
+# Вывести информацию о тех пациентах, которые хотя бы один раз были у врача.
 
+SELECT * FROM patients p
+WHERE EXISTS (SELECT *
+              FROM talons t
+              WHERE p.oms_num = t.oms_num);
+
+# Вывести информацию о пациентах, которые ни разу не были у кардиолога.
+
+
+SELECT * FROM patients p
+WHERE p.oms_num NOT IN(SELECT t.oms_num
+                FROM talons t
+                JOIN doctors d on t.doctor_num = d.doctor_num
+                WHERE d.spec = 'кардиолог');
+
+# Вывести список фамилий пациентов,
+# которые посещают ТОЛЬКО врача-терапевта (остальных врачей пациент не посещал).
+
+SELECT p.full_name FROM patients p
+WHERE p.oms_num IN(SELECT t.oms_num
+                FROM talons t
+                JOIN doctors d on t.doctor_num = d.doctor_num
+                WHERE d.spec = 'терапевт');
+
+# Вывести информацию о каждом талоне с указанием ФИО врача, специализации, фамилии пациента,
+# даты и времени приема, суммы визита, а также вычисляемое поле pensioner,
+# которое рассчитывается следующим образом:
+#
+# Если пациент - женщина, которая старше 60 лет, или мужчина старше 65 лет,
+# то выводим: "Пенсионер", иначе оставляем поле пустым.
+# Отсортируйте результат по ФИО пациента и дате визита.
+
+SELECT
+	d.doctor_name,
+	d.spec,
+	p.full_name,
+	t.visit_time,
+	t.visit_amount,
+	IF((p.sex = 'м' AND (2024 - YEAR(p.birth_date)) >= 65)
+	OR (p.sex = 'ж' AND (2024 - YEAR(p.birth_date)) >= 60), 'Пенсионер', NULL) AS pensioner
+FROM talons t
+JOIN patients p
+ON (p.oms_num = t.oms_num)
+JOIN doctors d
+ON (t.doctor_num = d.doctor_num)
+ORDER BY 3,4;
