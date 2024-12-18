@@ -240,3 +240,106 @@ ON (p.oms_num = t.oms_num)
 JOIN doctors d
 ON (t.doctor_num = d.doctor_num)
 ORDER BY 3,4;
+
+# Создайте VIEW patient_expenses, которая содержит расходы по каждому пациенту.
+
+CREATE OR REPLACE VIEW patient_expenses(oms_num, expenses_amount)
+AS
+SELECT
+    p.oms_num,
+    SUM(t.visit_amount)
+FROM patients as p
+JOIN talons t
+ON (p.oms_num= t.oms_num)
+GROUP BY t.oms_num;
+
+SELECT * FROM patient_expenses;
+
+# Измените скрипт из задачи, добавив использование WITH.
+# Вывести информацию о визитах, стоимость которых не ниже средней стоимости визитов по всем талонам.
+
+SELECT *
+FROM talons
+WHERE visit_amount >= (SELECT AVG(visit_amount)
+                      FROM talons);
+
+WITH avg_visit_amount AS (
+    SELECT AVG(visit_amount) FROM talons
+)
+SELECT *
+FROM talons
+WHERE visit_amount >= (SELECT * FROM avg_visit_amount);
+
+# Вывести список врачей(всю информацию из таблицы doctors), у которых не было ни одного визита.
+
+SELECT
+    d.doctor_num,
+    d.doctor_name,
+    d.spec,
+    d.cabinet_num
+FROM doctors d
+LEFT JOIN talons t
+ON d.doctor_num = t.doctor_num
+WHERE t.doctor_num IS NULL;
+
+# Выведите все данные о врачах из таблицы doctors, у которых заполнена специализация
+
+SELECT * FROM doctors
+WHERE spec IS NOT NULL;
+
+# Выведите информацию о докторах (не меняя данные в таблице) - номер доктора,
+# ФИО доктора и специальность (если специальность не заполнена - выведите "Не заполнена"),
+# используя функцию COALESCE:
+
+SELECT
+	doctor_num,
+    doctor_name,
+    IFNULL(spec, "Не заполнена") AS spec
+FROM doctors;
+
+# Выведите номер доктора, его ФИО, специализацию, а также группу специализации (doc_group), которая высчитывается следующим образом:
+
+# Если специализация доктора - терапевт, то присваиваем группу 'Врач общей практики'
+# Если специализация доктора не заполнена, то проставляем 'Не определена'
+# В остальных случаях группа 'Узкие специалисты'
+
+SELECT
+    d.doctor_num,
+    d.doctor_name,
+    d.spec,
+    CASE
+        WHEN d.spec = 'терапевт' THEN 'Врач общей практики'
+        WHEN ISNULL(d.spec) THEN 'Не определена'
+        ELSE 'Узкие специалисты'
+    END AS doc_group
+FROM doctors d;
+
+# В таблицу med_area загрузили данные по адресам с лишними пробелами.
+# Обновите данные в поле area_address, чтобы лишних пробелов не было и в начале строки и в конце.
+
+UPDATE med_area
+SET area_address = TRIM(BOTH FROM area_address);
+
+# Для каждой строки area_address из таблицы med_area найдите номер позиции подстроки 'ул.'.
+# Выведите все поля из таблицы и третье поле - с номером позиции.
+
+SELECT
+    med_area.area_num,
+    med_area.area_address,
+    LOCATE('ул.', med_area.area_address) AS pos
+FROM med_area
+
+# Выведите три поля - фамилию, имя, отчество врача по отдельности из таблицы doctors на основе поля doctor_name.
+
+SELECT
+SUBSTRING_INDEX(doctor_name, ' ', 1)  AS doc_surname,
+SUBSTRING_INDEX(SUBSTRING_INDEX(doctor_name, ' ', 2), ' ', -1) AS doc_name,
+SUBSTRING_INDEX(doctor_name, ' ', -1) AS doc_midname
+FROM doctors;
+
+# Выведите номер участка и название улицы из адреса (например, для участка 1 выведите Ленина).
+
+SELECT
+area_num,
+SUBSTRING_INDEX(area_address, 'ул. ', -1) AS area_address
+FROM med_area;
