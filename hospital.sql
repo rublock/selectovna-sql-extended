@@ -343,3 +343,73 @@ SELECT
 area_num,
 SUBSTRING_INDEX(area_address, 'ул. ', -1) AS area_address
 FROM med_area;
+
+# Выведите из таблицы talons полис ОМС и скидку, которая считается по формуле:
+# стоимость визита * случайное число. Полученную скидку округлите до целого числа.
+
+SELECT
+    talons.oms_num,
+    FLOOR(talons.visit_amount * RAND()) AS discount
+FROM talons;
+
+# Выведите информацию о визитах за август 2023 года.
+
+SELECT * FROM talons
+WHERE MONTH(visit_time) = 8 AND YEAR(visit_time) = 2023;
+
+# ОКОННЫЕ ФУНКЦИИ
+
+# Выведите информацию о всех посещениях поликлиники - номер доктора,
+# стоимость визита и максимальную стоимость визита, которая была у текущего доктора.
+
+SELECT
+    doctor_num,
+    visit_amount,
+    MAX(visit_amount) OVER(PARTITION BY doctor_num)
+        AS max_doc_amount
+FROM talons;
+
+# Измените предыдущий скрипт, вычислив процент суммы визита от максимальной суммы визита каждого доктора.
+# Вычисляется по формуле: ( visit_amount / MAX(visit_amount) OVER(PARTITION BY doctor_num) ) * 100
+# Выведите номер доктора, стоимость визита и процент, округленный до целого числа.
+
+SELECT
+    doctor_num,
+    visit_amount,
+    ROUND((visit_amount / MAX(visit_amount) OVER(PARTITION BY doctor_num)) * 100)
+        AS procent_amount
+FROM talons;
+
+# Выведите сколько заработал доктор с течением времени,
+# то есть в первый день работы он заработал x рублей,
+# во второй день работы x+y рублей и т.д.
+#
+# В результирующем наборе должны быть: номер доктора, стоимость визита,
+# дата визита и рассчитанная сумма визитов.
+
+SELECT
+    doctor_num,
+    visit_amount,
+    visit_time,
+    SUM(visit_amount) OVER(PARTITION BY doctor_num ORDER BY visit_time)
+        AS sum_doc_amount
+FROM talons;
+
+# Из таблицы с визитами выберите самые первые(по времени) визиты по каждому доктору.
+# Выведите все поля из таблицы talons.
+#
+# Используйте функцию ROW_NUMBER() для разметки строк("оберните" результат в подзапрос),
+# а затем отфильтруйте строки, где нумерация строк равна 1.
+
+WITH RankedVisits AS (
+    SELECT
+        doctor_num,
+        oms_num,
+        visit_time,
+        visit_amount,
+        ROW_NUMBER() OVER(PARTITION BY doctor_num ORDER BY visit_time) AS num
+    FROM talons
+)
+SELECT doctor_num, oms_num, visit_time, visit_amount
+FROM RankedVisits
+WHERE num = 1;
