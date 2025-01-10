@@ -413,3 +413,24 @@ WITH RankedVisits AS (
 SELECT doctor_num, oms_num, visit_time, visit_amount
 FROM RankedVisits
 WHERE num = 1;
+
+# Вывести информацию о количестве талонов к каждому врачу (выведите ФИО и специализацию).
+
+SELECT
+    d.doctor_name,
+    d.spec,
+    COUNT(t.doctor_num) AS count_talon
+FROM doctors d
+LEFT JOIN talons t on d.doctor_num = t.doctor_num
+GROUP BY d.doctor_num;
+
+# Вычислить среднюю сумму стоимости приема по талонам для врача Вахтина
+# (выведите ФИО, специализацию и среднюю сумму).
+
+SELECT
+    d.doctor_name,
+    d.spec,
+    AVG(t.visit_amount) AS visit_amaount
+FROM doctors d
+LEFT JOIN talons t on d.doctor_num = t.doctor_num
+WHERE d.doctor_num = 1;
